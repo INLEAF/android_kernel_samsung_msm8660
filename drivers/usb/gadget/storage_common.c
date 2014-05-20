@@ -225,11 +225,6 @@ struct interrupt_data {
 #define ASC(x)		((u8) ((x) >> 8))
 #define ASCQ(x)		((u8) (x))
 
-#define RANDOM_WRITE_COUNT_TO_BE_FLUSHED (15)
-/* VPD(Vital product data) Page Name */
-#define VPD_SUPPORTED_VPD_PAGES		0x00
-#define VPD_UNIT_SERIAL_NUMBER		0x80
-#define VPD_DEVICE_IDENTIFICATION	0x83
 
 /*-------------------------------------------------------------------------*/
 
@@ -238,9 +233,6 @@ struct fsg_lun {
 	struct file	*filp;
 	loff_t		file_length;
 	loff_t		num_sectors;
-
-	u8		random_write_count;
-	loff_t		last_offset;
 
 	unsigned int	initially_ro:1;
 	unsigned int	ro:1;
@@ -255,10 +247,7 @@ struct fsg_lun {
 	u32		sense_data_info;
 	u32		unit_attention_data;
 
-	unsigned int	blkbits;	/* Bits of logical block size of bound block device */
-	unsigned int	blksize;	/* logical block size of bound block device */
 	struct device	dev;
-	char		*lun_filename;
 #ifdef CONFIG_USB_MSC_PROFILING
 	spinlock_t	lock;
 	struct {
@@ -607,26 +596,13 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
 		rc = (int) size;
 		goto out;
 	}
-
-	if (curlun->cdrom) {
-		curlun->blksize = 2048;
-		curlun->blkbits = 11;
-	} else if (inode->i_bdev) {
-		curlun->blksize = bdev_logical_block_size(inode->i_bdev);
-		curlun->blkbits = blksize_bits(curlun->blksize);
-	} else {
-		curlun->blksize = 512;
-		curlun->blkbits = 9;
-	}
-
-	num_sectors = size >> curlun->blkbits; /* File size in logic-block-size blocks */
 	num_sectors = size >> 9;	/* File size in 512-byte blocks */
 	min_sectors = 1;
 	if (curlun->cdrom) {
-		num_sectors &= ~3;	/* Reduce to a multiple of 2048 */
-		min_sectors = 300*4;	/* Smallest track is 300 frames */
-		if (num_sectors >= 256*60*75*4) {
-			num_sectors = (256*60*75 - 1) * 4;
+		num_sectors >>= 2;	/* Reduce to a multiple of 2048 */
+		min_sectors = 300;	/* Smallest track is 300 frames */
+		if (num_sectors >= 256*60*75) {
+			num_sectors = (256*60*75 - 1);
 			LINFO(curlun, "file too big: %s\n", filename);
 			LINFO(curlun, "using only first %d blocks\n",
 					(int) num_sectors);
@@ -655,9 +631,6 @@ out:
 static void fsg_lun_close(struct fsg_lun *curlun)
 {
 	if (curlun->filp) {
-		curlun->last_offset = 0;
-		curlun->random_write_count = 0;
-
 		LDBG(curlun, "close backing file\n");
 		fput(curlun->filp);
 		curlun->filp = NULL;
@@ -674,25 +647,16 @@ static void fsg_lun_close(struct fsg_lun *curlun)
 static int fsg_lun_fsync_sub(struct fsg_lun *curlun)
 {
 	struct file	*filp = curlun->filp;
-	int rc = 0;
 
 	if (curlun->ro || !filp)
 		return 0;
-
-	rc = vfs_fsync(filp, 1);
-	if (!rc) {
-		curlun->last_offset = 0;
-		curlun->random_write_count = 0;
-	}
-
-	return rc;
+	return vfs_fsync(filp, 1);
 }
 
 static void store_cdrom_address(u8 *dest, int msf, u32 addr)
 {
 	if (msf) {
 		/* Convert to Minutes-Seconds-Frames */
-		addr >>= 2;		/* Convert to 2048-byte frames */
 		addr += 2*75;		/* Lead-in occupies 2 seconds */
 		dest[3] = addr % 75;	/* Frames */
 		addr /= 75;
@@ -726,14 +690,6 @@ static ssize_t fsg_show_nofua(struct device *dev, struct device_attribute *attr,
 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
 
 	return sprintf(buf, "%u\n", curlun->nofua);
-}
-
-static ssize_t fsg_show_cdrom (struct device *dev, struct device_attribute *attr,
-			   char *buf)
-{
-	struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
-
-	return sprintf(buf, "%d\n", curlun->cdrom);
 }
 
 #ifdef CONFIG_USB_MSC_PROFILING
@@ -891,13 +847,21 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
 	return (rc < 0 ? rc : count);
 }
 
-static ssize_t fsg_store_cdrom(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
+static ssize_t fsg_show_cdrom (struct device *dev, struct device_attribute *attr,
+			   char *buf)
 {
-	ssize_t    rc;
-	struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
-	struct rw_semaphore  *filesem = dev_get_drvdata(dev);
-	unsigned  cdrom;
+	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
+
+	return sprintf(buf, "%d\n", curlun->cdrom);
+}
+
+static ssize_t fsg_store_cdrom(struct device *dev, struct device_attribute *attr,
+			    const char *buf, size_t count)
+{
+	ssize_t		rc;
+	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
+	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
+	unsigned	cdrom;
 
 	rc = kstrtouint(buf, 2, &cdrom);
 	if (rc)

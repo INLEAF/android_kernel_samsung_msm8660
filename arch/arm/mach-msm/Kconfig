@@ -129,6 +129,7 @@ config ARCH_MSM8X60
 	select MULTI_IRQ_HANDLER
 	select MSM_MULTIMEDIA_USE_ION
 	select MSM_PM8X60 if PM
+	select ARM_HAS_SG_CHAIN
 
 config ARCH_MSM8960
 	bool "MSM8960"
@@ -216,7 +217,6 @@ config ARCH_MSM8930
 config ARCH_APQ8064
 	bool "APQ8064"
 	select ARCH_MSM_KRAITMP
-	select MACH_APQ8064_SIM if !MACH_APQ8064_RUMI3
 	select MSM_V2_TLMM
 	select ARM_GIC
 	select CPU_V7
@@ -704,6 +704,29 @@ config MACH_APQ8064_RUMI3
 	help
 	  Support for the Qualcomm APQ8064 RUMI3 emulator.
 
+config MACH_APQ8064_CDP
+	depends on ARCH_APQ8064
+	bool "APQ8064 CDP"
+	help
+	  Support for the Qualcomm APQ8064 CDP device.
+
+config MACH_APQ8064_MTP
+	depends on ARCH_APQ8064
+	bool "APQ8064 MTP"
+	help
+	  Support for the Qualcomm APQ8064 MTP device.
+
+config MACH_APQ8064_LIQUID
+	depends on ARCH_APQ8064
+	bool "APQ8064 LIQUID"
+	help
+	  Support for the Qualcomm APQ8064 LIQUID device.
+
+config MACH_MPQ8064_CDP
+	depends on ARCH_APQ8064
+	bool "MPQ8064 CDP"
+	help
+	  Support for the Qualcomm MPQ8064 CDP device.
 config MACH_FSM9XXX_SURF
 	depends on ARCH_FSM9XXX
 	depends on !MSM_STACKED_MEMORY
@@ -1346,14 +1369,6 @@ config MSM_SDIO_SMEM
 	  memory. Used by remote storage client to shadow
 	  MDM9K filesystem.
 
-config MSM_MPDEC
-       bool "Enable kernel based mpdecision"
-       depends on MSM_SMP
-       default n
-       help
-        This enables kernel based multi core control.
-        (up/down hotplug based on load)
-
 config MSM_DALRPC
 	bool "DAL RPC support"
 	default n
@@ -1366,6 +1381,29 @@ config MSM_DALRPC_TEST
 	default m
 	help
 	  Exercises DAL RPC calls to QDSP6.
+
+config MSM_MPDEC
+	bool "Enable kernel based mpdecision"
+	depends on MSM_SMP
+	default n
+	help
+	  This enables kernel based multi core control.
+	  (up/down hotplug based on load)
+
+config MSM_MPDEC_INPUTBOOST_CPUMIN
+	bool "Enable kernel based mpdecision"
+	depends on MSM_MPDEC
+	default n
+	help
+	  This pushes the cpu min speed to predefined values on input events.
+
+config KGSL_GPU_CTRL
+	bool "MSM KGSL GPU frequency control by CvD"
+	default y
+	help
+	  Allow for GPU overclock frequencies and sysfs
+	  interface for managing max GPU speed. 3D max 
+	  clock 320MHz, 2D max clock 266MHz.
 
 if CPU_FREQ_MSM
 
@@ -2477,3 +2515,10 @@ config COMPACTION_RETRY
 	  we give one more try to allocate pages with forced compaction.
 	  This might avoid oom-killer invocation.
 	  with many free pages being already there.
+
+config FORCE_FAST_CHARGE
+	bool "Force AC charge mode at will"
+	default y
+	help
+	  A simple sysfs interface to force adapters that
+	  are detected as USB to charge as AC.
