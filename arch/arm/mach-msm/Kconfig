@@ -1405,6 +1405,10 @@ config KGSL_GPU_CTRL
 	  interface for managing max GPU speed. 3D max 
 	  clock 320MHz, 2D max clock 266MHz.
 
+config CPU_VOLTAGE_TABLE
+	bool "Enable CPU Voltage Table via sysfs for adjustements"
+	default n
+
 if CPU_FREQ_MSM
 
 config MSM_CPU_FREQ_SET_MIN_MAX
