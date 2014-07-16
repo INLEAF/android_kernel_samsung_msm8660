@@ -32,6 +32,10 @@
 
 #include "acpuclock.h"
 
+/* maxscroff */
+uint32_t maxscroff_freq = 1026000;
+uint32_t maxscroff = 1;
+
 #ifdef CONFIG_SMP
 struct cpufreq_work_struct {
 	struct work_struct work;
@@ -104,11 +108,30 @@ struct cpu_freq {
 
 static DEFINE_PER_CPU(struct cpu_freq, cpu_freq_info);
 
+/**maxscroff**/
+static int __init cpufreq_read_arg_maxscroff(char *max_so)
+{
+	if (strcmp(max_so, "0") == 0) {
+		maxscroff = 0;
+	} else if (strcmp(max_so, "1") == 0) {
+		maxscroff = 1;
+	} else {
+		maxscroff = 0;
+	}
+	return 1;
+}
+
+__setup("max_so=", cpufreq_read_arg_maxscroff);
+/**end maxscroff**/
+
 static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq)
 {
 	int ret = 0;
+	int saved_sched_policy = -EINVAL;
+	int saved_sched_rt_prio = -EINVAL;
 	struct cpufreq_freqs freqs;
 	struct cpu_freq *limit = &per_cpu(cpu_freq_info, policy->cpu);
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
 	if (limit->limits_init) {
 		if (new_freq > limit->allowed_max) {
@@ -123,6 +146,20 @@ static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq)
 	}
 
 	freqs.old = policy->cur;
+	freqs.new = new_freq;
+	freqs.cpu = policy->cpu;
+
+	/*
+	 * Put the caller into SCHED_FIFO priority to avoid cpu starvation
+	 * in the acpuclk_set_rate path while increasing frequencies
+	 */
+
+	if (freqs.new > freqs.old && current->policy != SCHED_FIFO) {
+		saved_sched_policy = current->policy;
+		saved_sched_rt_prio = current->rt_priority;
+		sched_setscheduler_nocheck(current, SCHED_FIFO, &param);
+	}
+
 	if (override_cpu) {
 		if (policy->cur == policy->max)
 			return 0;
@@ -161,6 +198,11 @@ static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq)
 	if (!ret)
 		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
 
+	/* Restore priority after clock ramp-up */
+	if (freqs.new > freqs.old && saved_sched_policy >= 0) {
+		param.sched_priority = saved_sched_rt_prio;
+		sched_setscheduler_nocheck(current, saved_sched_policy, &param);
+	}
 	return ret;
 }
 
@@ -441,6 +483,77 @@ static int msm_cpufreq_resume(void)
 
 	return NOTIFY_DONE;
 }
+/** maxscreen off sysfs interface **/
+
+static ssize_t show_max_screen_off_khz(struct cpufreq_policy *policy, char *buf)
+{
+	return sprintf(buf, "%u\n", maxscroff_freq);
+}
+
+static ssize_t store_max_screen_off_khz(struct cpufreq_policy *policy,
+		const char *buf, size_t count)
+{
+	unsigned int freq = 0;
+	int ret;
+	int index;
+	struct cpufreq_frequency_table *freq_table = cpufreq_frequency_get_table(policy->cpu);
+
+	if (!freq_table)
+		return -EINVAL;
+
+	ret = sscanf(buf, "%u", &freq);
+	if (ret != 1)
+		return -EINVAL;
+
+	mutex_lock(&per_cpu(cpufreq_suspend, policy->cpu).suspend_mutex);
+
+	ret = cpufreq_frequency_table_target(policy, freq_table, freq,
+			CPUFREQ_RELATION_H, &index);
+	if (ret)
+		goto out;
+
+	maxscroff_freq = freq_table[index].frequency;
+
+	ret = count;
+
+out:
+	mutex_unlock(&per_cpu(cpufreq_suspend, policy->cpu).suspend_mutex);
+	return ret;
+}
+
+struct freq_attr msm_cpufreq_attr_max_screen_off_khz = {
+	.attr = { .name = "screen_off_max_freq",
+		.mode = 0644,
+	},
+	.show = show_max_screen_off_khz,
+	.store = store_max_screen_off_khz,
+};
+
+static ssize_t show_max_screen_off(struct cpufreq_policy *policy, char *buf)
+{
+	return sprintf(buf, "%u\n", maxscroff);
+}
+
+static ssize_t store_max_screen_off(struct cpufreq_policy *policy,
+		const char *buf, size_t count)
+{
+	if (buf[0] >= '0' && buf[0] <= '1' && buf[1] == '\n')
+            if (maxscroff != buf[0] - '0') 
+		        maxscroff = buf[0] - '0';
+
+	return count;
+}
+
+struct freq_attr msm_cpufreq_attr_max_screen_off = {
+	.attr = { .name = "screen_off_max",
+		.mode = 0644,
+	},
+	.show = show_max_screen_off,
+	.store = store_max_screen_off,
+};
+
+/** end maxscreen off sysfs interface **/
+
 
 static int msm_cpufreq_pm_event(struct notifier_block *this,
 				unsigned long event, void *ptr)
@@ -478,6 +591,9 @@ static SYSDEV_CLASS_ATTR(mfreq, 0200, NULL, store_mfreq);
 
 static struct freq_attr *msm_freq_attr[] = {
 	&cpufreq_freq_attr_scaling_available_freqs,
+/** maxscreen off sysfs interface **/
+	&msm_cpufreq_attr_max_screen_off_khz,
+	&msm_cpufreq_attr_max_screen_off,
 	NULL,
 };
 
