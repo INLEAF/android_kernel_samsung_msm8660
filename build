@@ -8,7 +8,6 @@ upload=
 kernelversion=008
 device="hercules"
 outfile=WildKernel_signed.zip
-OTAUpdater="https://raw.githubusercontent.com/EmmanuelU/wild_kernel_samsung_msm8660/android-msm-hercules-3.0/flashable/tools/updatewild.sh"
 OTALink="http://forum.xda-developers.com/showthread.php?t=2765196"
 
 outdate=$(date +%y%m%d)
@@ -90,7 +89,7 @@ make clean $buildargs | tee build_log.txt
 fi
 echo >> build_log.txt
 echo Writing configs ...
-make hercules_defconfig | tee -a build_log.txt
+make "$device"_defconfig | tee -a build_log.txt
 echo >> build_log.txt
 make $buildargs | tee -a build_log.txt
 if [ ! -f arch/arm/boot/zImage ];
@@ -108,7 +107,6 @@ cp -arf flashable/tools/ramdisks/4.4 flashable/tools/ramdisks/tmp
 echo "ro.wild.date=$outdate" >> flashable/tools/ramdisks/tmp/default.prop
 echo "ro.wild.version=$kernelversion" >> flashable/tools/ramdisks/tmp/default.prop
 echo "ro.wild.device=$device" >> flashable/tools/ramdisks/tmp/default.prop
-echo "ro.wild.ota=$OTAUpdater" >> flashable/tools/ramdisks/tmp/default.prop
 rm -rf flashable/tools/updatewild.sh
 cp flashable/tools/wild.sh flashable/tools/updatewild.sh
 sed -i '1i' flashable/tools/updatewild.sh
