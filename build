@@ -7,7 +7,7 @@ upload=
 
 kernelversion=009
 device="hercules"
-ramdisk="4.4"
+ramdisk="4.4_new"
 outfile=WildKernel_signed.zip
 OTALink="http://forum.xda-developers.com/showthread.php?t=2765196"
 
