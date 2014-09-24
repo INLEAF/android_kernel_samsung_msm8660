@@ -6,7 +6,7 @@ fixed=
 dynamic=
 upload=
 
-kernelversion=009
+kernelversion=009-Build2
 device="hercules"
 ramdisk="4.4_new"
 outfile=WildKernel_signed.zip

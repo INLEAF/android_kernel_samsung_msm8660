@@ -1,5 +1,5 @@
 #!/bin/sh
-latestversion=009
+latestversion=009-Build2
 latestdate=140924
 latestdateliteral='September 24 2014'
 latestDL=http://forum.xda-developers.com/showthread.php?t=2765196
