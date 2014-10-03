@@ -1,7 +1,7 @@
 #!/bin/sh
 latestversion=009-Build2
-latestdate=141002
-latestdateliteral='October 02 2014'
+latestdate=141003
+latestdateliteral='October 03 2014'
 latestDL=http://forum.xda-developers.com/showthread.php?t=2765196
 input="$1"
 if [[ -z "$input" ]]
