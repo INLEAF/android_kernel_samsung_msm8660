@@ -93,4 +93,5 @@ modules
 stock
 make.sh
 /out
+*.log
 \#*#
