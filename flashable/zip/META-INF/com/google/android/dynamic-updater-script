@@ -67,7 +67,7 @@ ui_print("-- Installing Modules");
 assert(package_extract_dir("system", "/system"));
 set_perm_recursive(0, 0, 0755, 0644, "/system/lib/modules");
 ui_print("-- Installing Kernel");
-assert(package_extract_file("/tmp/newboot.img", "/dev/block/mmcblk0p8"));
+package_extract_file("/tmp/newboot.img", "/dev/block/mmcblk0p8");
 show_progress(0.250000, 0);
 unmount("/system");
 ui_print("-- Done");
