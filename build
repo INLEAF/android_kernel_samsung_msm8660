@@ -102,7 +102,7 @@ rm -rf flashable/zip/META-INF/com/google/android/updater-script
 if [[ "$fixed" == "false" ]]; then
 rm -rf flashable/zip/system/lib/modules
 mkdir flashable/zip/system/ 
-mkdir flashable/zip/system/lib/ default.prop
+mkdir flashable/zip/system/lib/
 mkdir flashable/zip/system/lib/modules/
 fi
 rm -rf arch/arm/boot/zImage
@@ -153,15 +153,15 @@ fi
 if [[ "$dynamic" == "false" ]]; then
 cp -f flashable/tools/normal-updater-script flashable/zip/META-INF/com/google/android/updater-script
 else
+cp -f flashable/tools/dynamic-updater-script flashable/zip/META-INF/com/google/android/updater-script
+fi
 rm -rf flashable/zip/tools/ramdisk_override
 mkdir flashable/zip/tools/ramdisk_override
 cp -arf flashable/tools/ramdisks/$dynamic_ramdisk_override/* flashable/zip/tools/ramdisk_override
 rm -rf flashable/zip/tools/ramdisk_override/default.prop
 cp -f flashable/tools/ramdisks/tmp/default.prop flashable/zip/tools/ramdisk_override/default.prop
-cp -f flashable/tools/dynamic-updater-script flashable/zip/META-INF/com/google/android/updater-script
 rm -rf flashable/tools/ramdisks/ramdisk.gz
 rm -rf flashable/tools/ramdisks/tmp
-fi
 cd flashable/zip/
 zip -r9 ../../tmp-kernel.zip *
 cd ../..

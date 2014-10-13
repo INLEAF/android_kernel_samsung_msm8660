@@ -1,7 +1,7 @@
 #!/sbin/sh
 /tmp/unpackbootimg -i /tmp/boot.img -o /tmp/
 mkdir /tmp/ramdisk/
-mv /tmp/boot.img-ramdisk.gz /tmp/ramdisk/
+mv -f /tmp/boot.img-ramdisk.gz /tmp/ramdisk/boot.img-ramdisk.gz
 cd /tmp/ramdisk
 gunzip -c boot.img-ramdisk.gz | cpio -i
 rm -rf boot.img-ramdisk.gz
