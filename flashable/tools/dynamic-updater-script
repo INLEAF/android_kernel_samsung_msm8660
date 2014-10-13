@@ -57,7 +57,6 @@ set_perm(0, 0, 0777, "/tmp/mkbootimg.sh");
 set_perm(0, 0, 0777, "/tmp/mkbootimg");
 set_perm(0, 0, 0777, "/tmp/unpackbootimg");
 run_program("/sbin/busybox", "dd", "if=/dev/block/mmcblk0p8", "of=/tmp/boot.img");
-run_program("/tmp/unpackbootimg", "-i", "/tmp/boot.img", "-o", "/tmp/");
 ui_print("");
 ui_print("-- For Android Version: " + file_getprop("/system/build.prop", "ro.build.version.release"));
 ui_print("");
