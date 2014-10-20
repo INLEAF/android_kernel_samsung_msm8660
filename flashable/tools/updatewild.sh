@@ -1,6 +1,6 @@
 #!/bin/sh
 #DO NOT EDIT FILE - AUTO GENERATED FOR hercules
-latestversion=011-build2
+latestversion=011-build3
 latestdate=141020
 latestdateliteral='October 20 2014'
 latestDL=http://forum.xda-developers.com/showthread.php?t=2765196
