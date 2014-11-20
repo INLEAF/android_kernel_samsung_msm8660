@@ -2166,7 +2166,7 @@ static long m5mo_set_sensor_mode(int mode)
 
 	case SENSOR_SNAPSHOT_MODE:
 		CAM_DEBUG("SENSOR_SNAPSHOT_MODE START");
-		cpu_boost_timeout(1188, 3000);
+		cpu_boost_timeout(1188000, 3000);
 		if ((sec_get_batt_level() <= BATT_LOW_POWER) && req_flash_mode) {
 			snapshot_low_pwr = 1;
 			init_completion(&snapshot);
