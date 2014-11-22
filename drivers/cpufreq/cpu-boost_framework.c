@@ -95,7 +95,9 @@ void cpu_boost_timeout(unsigned int freq, unsigned int duration_ms)
 		for_each_possible_cpu(cpu) {
 			if (cpu_boosted)
 				cpu_boost_policy[cpu].cpu_boosted = 2;
-			cpu_boost_policy[cpu].boost_freq = freq;
+			
+			if(freq > cpu_boost_policy[cpu].saved_min) cpu_boost_policy[cpu].boost_freq = freq;
+			else cpu_boost_policy[cpu].boost_freq = cpu_boost_policy[cpu].saved_min;
 			cpu_boost_policy[cpu].boost_ms = duration_ms;
 		}
 		schedule_delayed_work(&boost_work, 0);
