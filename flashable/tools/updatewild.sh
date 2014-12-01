@@ -1,8 +1,8 @@
 #!/bin/sh
 #DO NOT EDIT FILE - AUTO GENERATED FOR hercules
 latestversion=012
-latestdate=141113
-latestdateliteral='November 13 2014'
+latestdate=141201
+latestdateliteral='December 01 2014'
 latestDL=http://forum.xda-developers.com/showthread.php?t=2765196
 input="$1"
 if [[ -z "$input" ]]
