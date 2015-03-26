@@ -75,6 +75,10 @@ GRTAGS
 GSYMS
 GTAGS
 
+# custom
+out
+*.log
+
 *.orig
 *~
 *.txt
